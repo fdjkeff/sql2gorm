@@ -2,11 +2,11 @@ package parser
 
 import (
 	"fmt"
-	"github.com/jinzhu/inflection"
 	"github.com/blastrain/vitess-sqlparser/tidbparser/ast"
 	"github.com/blastrain/vitess-sqlparser/tidbparser/dependency/mysql"
 	"github.com/blastrain/vitess-sqlparser/tidbparser/dependency/types"
 	"github.com/blastrain/vitess-sqlparser/tidbparser/parser"
+	"github.com/jinzhu/inflection"
 	"github.com/pkg/errors"
 	"go/format"
 	"io"
@@ -222,7 +222,8 @@ func makeCode(stmt *ast.CreateTableStmt, opt options) (string, []string, error) 
 	if err != nil {
 		return "", nil, err
 	}
-	code, err := format.Source([]byte(builder.String()))
+	builderString := strings.Replace(builder.String(), "\uFEFF", "", -1)
+	code, err := format.Source([]byte(builderString))
 	if err != nil {
 		return string(code), importPath, errors.WithMessage(err, "format golang code error")
 	}
@@ -277,8 +278,10 @@ func mysqlToGoType(colTp *types.FieldType, style NullStyle) (name string, path s
 			name = "string"
 		case mysql.TypeJSON:
 			name = "string"
+		case mysql.TypeEnum:
+			name = "string"
 		default:
-			return "UnSupport", ""
+			return "any", ""
 		}
 		if style == NullInPointer {
 			name = "*" + name
